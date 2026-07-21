@@ -41,7 +41,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Finora-Mac-${{ matrix.arch }}
-          path: |
-            release/*.dmg
-            release/*.zip
+          path: release/*.zip
           if-no-files-found: error
