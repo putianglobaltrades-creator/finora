@@ -65,7 +65,7 @@ export default function Sidebar({ currentPage, onNavigate }) {
       </div>
       <div className="sidebar-footer">
         <div className="sidebar-brand">Finora</div>
-        <div className="sidebar-version">Version 4.2.9</div>
+        <div className="sidebar-version">Version 4.3.0</div>
       </div>
     </nav>
   );

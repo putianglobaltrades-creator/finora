@@ -111,7 +111,7 @@ export default function Login() {
           </p>
         </div>
 
-        <span className="login-version-badge">v4.2.9</span>
+        <span className="login-version-badge">v4.3.0</span>
       </div>
 
       <div className="login-visual">

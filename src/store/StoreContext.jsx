@@ -74,7 +74,7 @@ export function StoreProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loaded, setLoaded] = useState(true);
   const [restoring, setRestoring] = useState(true);
-  const [version, setVersion] = useState('4.2.9');
+  const [version, setVersion] = useState('4.3.0');
 
   const applyData = useCallback((newData) => {
     setData(newData);
@@ -145,13 +145,14 @@ export function StoreProvider({ children }) {
           }
         }
 
-        // ALWAYS try to load profile (independent of loadAll)
+        // ALWAYS try to load profile — onboarding is register-only
         const profileRes = await window.finora.supabase.loadProfile(user.id || user.username);
-        if (!cancelled && profileRes?.success && profileRes?.data) {
-          const p = snakeToCamel(profileRes.data);
-          const local = merged.profiles[user.id];
-          // Preserve local setupComplete if Supabase profile is incomplete (e.g. upsert failed)
-          merged.profiles = { ...merged.profiles, [user.id]: { ...p, setupComplete: p.setupComplete || local?.setupComplete || false, userId: user.id } };
+        if (!cancelled) {
+          let p = { setupComplete: true, userId: user.id };
+          if (profileRes?.success && profileRes?.data) {
+            p = { ...snakeToCamel(profileRes.data), setupComplete: true, userId: user.id };
+          }
+          merged.profiles = { ...merged.profiles, [user.id]: p };
         }
 
         // ALWAYS try to load settings
@@ -215,16 +216,17 @@ export function StoreProvider({ children }) {
         console.log('[Supabase] Data loaded for', user.id);
       }
 
-      // Load profile from Supabase
+      // Load profile from Supabase — always mark setupComplete (onboarding is register-only)
       try {
         const profileRes = await window.finora.supabase.loadProfile(user.id);
+        const local = data.profiles[user.id];
+        let mergedProfile = { setupComplete: true, userId: user.id };
         if (profileRes.success && profileRes.data) {
           const p = snakeToCamel(profileRes.data);
-          const local = data.profiles[user.id];
-          const mergedProfile = { ...p, setupComplete: p.setupComplete || local?.setupComplete || false, userId: user.id };
-          const newData = { ...data, profiles: { ...data.profiles, [user.id]: mergedProfile } };
-          applyData(newData);
+          mergedProfile = { ...p, setupComplete: true, userId: user.id };
         }
+        const newData = { ...data, profiles: { ...data.profiles, [user.id]: mergedProfile } };
+        applyData(newData);
       } catch (e) { console.warn('[Supabase] Load profile error:', e); }
 
       // Load settings from Supabase
@@ -320,12 +322,16 @@ export function StoreProvider({ children }) {
     return false;
   }, []);
 
-  const mutate = useCallback(async (buildNew, table, filterUser) => {
+  const mutate = useCallback(async (buildNew, table, filterUser, deletedIds) => {
     const uid = currentUser?.id;
     const newData = buildNew(data);
     applyData(newData);
 
     if (uid && table && window.finora?.supabase) {
+      if (deletedIds?.length) {
+        try { await window.finora.supabase.delete(table, deletedIds); }
+        catch (e) { console.error(`[Supabase] ${table} delete failed:`, e); }
+      }
       const items = filterUser ? newData[table].filter(i => i.userId === uid) : newData[table];
       const ok = await syncTable(table, items, uid);
       if (!ok) console.error(`[Supabase] ${table} mutation failed to sync`);
@@ -339,7 +345,7 @@ export function StoreProvider({ children }) {
   }, [mutate, currentUser]);
 
   const deleteTransaction = useCallback(async (id) => {
-    return mutate(d => ({ ...d, transactions: d.transactions.filter(x => x.id !== id) }), 'transactions', true);
+    return mutate(d => ({ ...d, transactions: d.transactions.filter(x => x.id !== id) }), 'transactions', true, [id]);
   }, [mutate]);
 
   const updateTransaction = useCallback(async (id, updates) => {
@@ -352,7 +358,7 @@ export function StoreProvider({ children }) {
   }, [mutate, currentUser]);
 
   const deleteBudget = useCallback(async (id) => {
-    return mutate(d => ({ ...d, budgets: d.budgets.filter(x => x.id !== id) }), 'budgets', true);
+    return mutate(d => ({ ...d, budgets: d.budgets.filter(x => x.id !== id) }), 'budgets', true, [id]);
   }, [mutate]);
 
   const addAccount = useCallback(async (account) => {
@@ -361,7 +367,7 @@ export function StoreProvider({ children }) {
   }, [mutate, currentUser]);
 
   const deleteAccount = useCallback(async (id) => {
-    return mutate(d => ({ ...d, accounts: d.accounts.filter(x => x.id !== id) }), 'accounts', true);
+    return mutate(d => ({ ...d, accounts: d.accounts.filter(x => x.id !== id) }), 'accounts', true, [id]);
   }, [mutate]);
 
   const addSavingsGoal = useCallback(async (goal) => {
@@ -370,7 +376,7 @@ export function StoreProvider({ children }) {
   }, [mutate, currentUser]);
 
   const deleteSavingsGoal = useCallback(async (id) => {
-    return mutate(d => ({ ...d, savingsGoals: d.savingsGoals.filter(x => x.id !== id) }), 'savings_goals', true);
+    return mutate(d => ({ ...d, savingsGoals: d.savingsGoals.filter(x => x.id !== id) }), 'savings_goals', true, [id]);
   }, [mutate]);
 
   const updateSavingsGoal = useCallback(async (id, updates) => {
@@ -383,7 +389,7 @@ export function StoreProvider({ children }) {
   }, [mutate, currentUser]);
 
   const deleteRecurringPayment = useCallback(async (id) => {
-    return mutate(d => ({ ...d, recurringPayments: d.recurringPayments.filter(x => x.id !== id) }), 'recurring_payments', true);
+    return mutate(d => ({ ...d, recurringPayments: d.recurringPayments.filter(x => x.id !== id) }), 'recurring_payments', true, [id]);
   }, [mutate]);
 
   const addInvestment = useCallback(async (investment) => {
@@ -392,7 +398,7 @@ export function StoreProvider({ children }) {
   }, [mutate, currentUser]);
 
   const deleteInvestment = useCallback(async (id) => {
-    return mutate(d => ({ ...d, investments: d.investments.filter(x => x.id !== id) }), 'investments', true);
+    return mutate(d => ({ ...d, investments: d.investments.filter(x => x.id !== id) }), 'investments', true, [id]);
   }, [mutate]);
 
   const addCrypto = useCallback(async (holding) => {
@@ -401,7 +407,7 @@ export function StoreProvider({ children }) {
   }, [mutate, currentUser]);
 
   const deleteCrypto = useCallback(async (id) => {
-    return mutate(d => ({ ...d, crypto: d.crypto.filter(x => x.id !== id) }), 'crypto', true);
+    return mutate(d => ({ ...d, crypto: d.crypto.filter(x => x.id !== id) }), 'crypto', true, [id]);
   }, [mutate]);
 
   const updateCryptoPrice = useCallback(async (id, currentPrice, change24h) => {

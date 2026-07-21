@@ -1,6 +1,6 @@
 {
   "name": "finora",
-  "version": "4.2.9",
+  "version": "4.3.0",
   "author": "Finora",
   "description": "Finora - Your Financial World in One Place",
   "main": "electron/main.js",
