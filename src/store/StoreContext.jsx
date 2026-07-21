@@ -74,7 +74,7 @@ export function StoreProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loaded, setLoaded] = useState(true);
   const [restoring, setRestoring] = useState(true);
-  const [version, setVersion] = useState('4.2.8');
+  const [version, setVersion] = useState('4.2.9');
 
   const applyData = useCallback((newData) => {
     setData(newData);
