@@ -1,0 +1,100 @@
+{
+  "name": "finora",
+  "version": "4.2.8",
+  "author": "Finora",
+  "description": "Finora - Your Financial World in One Place",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "vite build && electron-builder",
+    "electron:pack": "vite build && electron-builder --dir",
+    "electron:dist": "vite build && electron-builder --win --x64",
+    "electron:dist:mac": "vite build && electron-builder --mac --x64",
+    "electron:dist:mac:arm": "vite build && electron-builder --mac --arm64",
+    "release": "vite build && electron-builder --win --x64 --config.directories.output=temp-release"
+  },
+  "build": {
+    "appId": "com.finora.app",
+    "productName": "Finora",
+    "copyright": "Copyright © 2026 Finora",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "public/icon.icns",
+      "category": "public.app-category.finance",
+      "darkModeSupport": true
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/icon.png",
+      "publisherName": "Finora"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Finora",
+      "installerIcon": "public/icon.ico",
+      "uninstallerIcon": "public/icon.ico",
+      "installerHeaderIcon": "public/icon.ico",
+      "license": "LICENSE.txt",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": true
+    },
+    "extraResources": [
+      {
+        "from": "assets/",
+        "to": "assets/"
+      }
+    ]
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
+    "date-fns": "^3.3.1",
+    "keyauth": "^1.0.3",
+    "lucide-react": "^0.294.0",
+    "papaparse": "^5.4.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^2.10.3",
+    "sharp": "^0.35.3",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^8.2.2",
+    "electron": "^28.2.2",
+    "electron-builder": "^24.13.3",
+    "electron-packager": "^17.1.2",
+    "vite": "^5.1.4",
+    "wait-on": "^7.2.0"
+  }
+}
