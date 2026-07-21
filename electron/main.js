@@ -305,11 +305,18 @@ ipcMain.handle('supabase:loadAll', async (_, { userId }) => {
   if (!userId) return { success: false, error: 'No user ID' };
   const result = {};
   try {
-    const results = await Promise.all(ALLOWED_TABLES.map(table =>
+    const settled = await Promise.allSettled(ALLOWED_TABLES.map(table =>
       supFetch('GET', `/rest/v1/${table}?user_id=eq.${encodeURIComponent(userId)}&select=*`).then(d => ({ table, data: d || [] }))
     ));
-    for (const { table, data } of results) result[table] = data;
-    log('INFO', `Supabase loadAll: ${userId} (${ALLOWED_TABLES.length} tables)`);
+    for (const out of settled) {
+      if (out.status === 'fulfilled') {
+        result[out.value.table] = out.value.data;
+      } else {
+        log('WARN', `Supabase loadAll table ${out.reason?.message || 'unknown'} — skipping`);
+        result[out.reason?.table || 'unknown'] = [];
+      }
+    }
+    log('INFO', `Supabase loadAll: ${userId} (${Object.keys(result).length} tables)`);
     return { success: true, data: result };
   } catch (err) {
     log('ERROR', `Supabase loadAll: ${err.message}`);
